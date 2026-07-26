@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Monster Pizza — choose fraction skills, build perfectly portioned gross pizzas, and feed hungry monsters in a 90-second arcade game."
+    />
+    <meta name="theme-color" content="#163c3b" />
+    <meta property="og:title" content="Monster Pizza" />
+    <meta
+      property="og:description"
+      content="Choose fraction skills and build gross pizzas for hungry monsters in a 90-second fraction feast."
+    />
+    <meta
+      property="og:image"
+      content="https://edenmitchell.github.io/monster-pizza/og.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="%BASE_URL%assets/monster-topping-fried-slugs.webp"
+    />
+    <title>Monster Pizza — 90-Second Fraction Feast</title>
+  </head>
+  <body>
+    <main id="app">
+      <h1 class="sr-only">Monster Pizza</h1>
+      <div id="game" aria-label="Monster Pizza fractions arcade game">
+        <div class="game-loading">WAKING THE MONSTER OVEN…</div>
+      </div>
+      <p id="orientation-hint" aria-hidden="true">
+        Turn your device sideways for the fastest feast.
+      </p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

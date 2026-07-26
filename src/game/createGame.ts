@@ -3,7 +3,7 @@ import { GameScene } from "./scenes/GameScene";
 import { MenuScene } from "./scenes/MenuScene";
 import { PreloadScene } from "./scenes/PreloadScene";
 
-export function createSliceRushGame(parent: HTMLElement): Phaser.Game {
+export function createMonsterPizzaGame(parent: HTMLElement): Phaser.Game {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,

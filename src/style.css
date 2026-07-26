@@ -3,6 +3,7 @@
   background: #163c3b;
   font-family: "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
   font-synthesis: none;
+  text-rendering: optimizeLegibility;
   --viewport-width: 100vw;
   --viewport-height: 100dvh;
 }
@@ -12,10 +13,11 @@
 }
 
 html,
-body {
+body,
+#app {
   width: 100%;
   height: 100%;
-  min-width: 320px;
+  min-height: 0;
   margin: 0;
   overflow: hidden;
   overscroll-behavior: none;
@@ -26,34 +28,36 @@ body {
   inset: 0;
   width: var(--viewport-width);
   height: var(--viewport-height);
+  min-width: 320px;
   background:
     radial-gradient(circle at 50% 12%, rgba(246, 190, 87, 0.38), transparent 42%),
     linear-gradient(145deg, #193f3e, #0f292b 72%);
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.game-shell,
-.game-host {
+#app {
   width: var(--viewport-width);
   height: var(--viewport-height);
-  min-width: 0;
-  min-height: 0;
-}
-
-.game-shell {
   display: grid;
   place-items: center;
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
     max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
 }
 
-.game-host {
+#game {
   position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
 }
 
-.game-host canvas {
+#game canvas {
   display: block;
   max-width: 100%;
   max-height: 100%;
@@ -150,16 +154,30 @@ body {
   letter-spacing: 0.08em;
 }
 
-.orientation-hint {
-  display: none;
+#orientation-hint {
   position: fixed;
-  inset: auto 18px calc(10px + env(safe-area-inset-bottom));
+  z-index: 20;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  width: min(88vw, 420px);
   margin: 0;
-  color: rgba(255, 248, 232, 0.82);
+  padding: 9px 14px;
+  transform: translate(-50%, 12px);
+  border: 1px solid rgba(255, 248, 232, 0.16);
+  border-radius: 999px;
+  color: rgba(255, 248, 232, 0.86);
+  background: rgba(15, 41, 43, 0.9);
   font-size: 12px;
   font-weight: 700;
   text-align: center;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+#orientation-hint.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .sr-only {
@@ -175,17 +193,13 @@ body {
 }
 
 @media (orientation: portrait) and (max-width: 760px) {
-  .game-shell {
+  #app {
     padding-bottom: max(38px, calc(12px + env(safe-area-inset-bottom)));
-  }
-
-  .orientation-hint {
-    display: block;
   }
 }
 
 @media (orientation: landscape) and (max-height: 600px) {
-  .game-shell {
+  #app {
     padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right))
       max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
   }

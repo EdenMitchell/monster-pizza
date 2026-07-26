@@ -20,7 +20,7 @@ export const ASSET = {
   },
 } as const;
 
-const ROOT = "/assets";
+const ROOT = `${import.meta.env.BASE_URL}assets`;
 
 export const IMAGE_ASSET_MANIFEST: readonly { readonly key: string; readonly path: string }[] = [
   { key: ASSET.exterior, path: `${ROOT}/monster-exterior.webp` },

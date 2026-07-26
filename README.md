@@ -6,7 +6,9 @@ fried slugs, zombie brains, pickled eyes, and swamp worms directly onto pizzas,
 build a hot streak, and earn a place on that skill setup's device-local top-10
 leaderboard.
 
-## Play
+Play it at [edenmitchell.github.io/monster-pizza](https://edenmitchell.github.io/monster-pizza/).
+
+## Run locally
 
 ```bash
 npm install
@@ -33,6 +35,11 @@ npm run typecheck
 npm run build
 ```
 
+## Deployment
+
+Every push to `main` runs the test suite, builds the static Vite site with the
+`/monster-pizza/` base path, and deploys `dist/` through GitHub Pages.
+
 The tests cover exact fraction arithmetic, at least 1,000 constructive orders
 for every selectable skill, shuffled-deck balance, selection rules, 90-second
 timing and scoring, per-setup leaderboard ordering, persistence, migration
@@ -43,6 +50,7 @@ recovery, and the complete asset manifest.
 - `src/domain` contains deterministic maths, selection, session, leaderboard,
   and save logic.
 - `src/game` contains Phaser scenes, rendering, and procedural Web Audio.
+- `src/main.ts` and `src/style.css` provide the static Vite browser shell.
 - `public/assets` contains the optimized original ImageGen art used at runtime.
 - `art-source/ART_DIRECTION.md` records the generated asset set and briefs.
 
