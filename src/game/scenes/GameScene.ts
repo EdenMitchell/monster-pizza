@@ -64,6 +64,20 @@ export class GameScene extends Phaser.Scene {
     super({ key: "game" });
   }
 
+  init(): void {
+    // Phaser reuses this Scene instance after returning from the results screen.
+    // Reset every run-local guard/reference so a completed game cannot leave the
+    // next one paused and non-interactive.
+    this.feedbackPending = false;
+    this.resultShown = false;
+    this.focusedWedge = 0;
+    this.orderContainer = undefined;
+    this.pizzaContainer = undefined;
+    this.toppingContainer = undefined;
+    this.nameEntry = undefined;
+    this.visibilityHandler = undefined;
+  }
+
   create(): void {
     addBackdrop(this, ASSET.interior, 0.06);
     this.add.rectangle(640, 48, 1280, 96, COLORS.tealDeep, 0.92).setDepth(20);
@@ -765,6 +779,7 @@ export class GameScene extends Phaser.Scene {
   private cleanUp(): void {
     if (this.visibilityHandler) {
       document.removeEventListener("visibilitychange", this.visibilityHandler);
+      this.visibilityHandler = undefined;
     }
     const keyboard = this.input.keyboard;
     keyboard?.off("keydown-LEFT", this.focusPrevious, this);
@@ -775,6 +790,7 @@ export class GameScene extends Phaser.Scene {
     keyboard?.off("keydown-ENTER", this.serveOrder, this);
     keyboard?.off("keydown-ESC", this.returnToMenu, this);
     this.nameEntry?.destroy();
+    this.nameEntry = undefined;
   }
 
   private orderTitle(): string {
