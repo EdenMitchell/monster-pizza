@@ -90,6 +90,22 @@ describe("teacher-selectable order skills", () => {
     expect(new Set(secondCycle)).toEqual(new Set(selected));
   });
 
+  it("makes combining twice as frequent as each other selected skill", () => {
+    const selected = [...FRACTION_SKILL_ORDER];
+    const deck = new SkillDeck(selected, seededRandom(123));
+    const twoCycles = Array.from(
+      { length: (selected.length + 1) * 2 },
+      () => deck.next(),
+    );
+    const counts = new Map<FractionSkillId, number>();
+    twoCycles.forEach((skill) => counts.set(skill, (counts.get(skill) ?? 0) + 1));
+
+    expect(counts.get("combining")).toBe(4);
+    selected
+      .filter((skill) => skill !== "combining")
+      .forEach((skill) => expect(counts.get(skill)).toBe(2));
+  });
+
   it("never leaks another skill when only one skill is selected", () => {
     const deck = new SkillDeck(["simple"], seededRandom(99));
     expect(Array.from({ length: 100 }, () => deck.next())).toEqual(

@@ -21,7 +21,7 @@ export interface StorageAdapter {
 }
 
 const DEFAULT_SETTINGS: SliceRushSettings = { muted: false, reducedMotion: false };
-const DEFAULT_SKILLS: readonly FractionSkillId[] = ["simple"];
+const DEFAULT_SKILLS: readonly FractionSkillId[] = FRACTION_SKILL_ORDER;
 const KNOWN_SKILLS = new Set<FractionSkillId>(FRACTION_SKILL_ORDER);
 let entrySequence = 1;
 

@@ -44,13 +44,14 @@ describe("skill-aware local leaderboard and settings", () => {
       .toEqual(["simple", "mixed-numbers"]);
     expect(skillSetKey(["mixed-numbers", "simple"]))
       .toBe("simple|mixed-numbers");
-    expect(canonicalSkills([])).toEqual(["simple"]);
+    expect(canonicalSkills([])).toEqual(FRACTION_SKILL_ORDER);
   });
 
   it("persists selections and protects the last selected skill", () => {
     const storage = new MemoryStorage();
     const store = new GameStore(storage);
-    expect(store.snapshot().selectedSkills).toEqual(SIMPLE);
+    expect(store.snapshot().selectedSkills).toEqual(FRACTION_SKILL_ORDER);
+    store.setSelectedSkills(SIMPLE);
     expect(store.toggleSkill("simple")).toBe(false);
     expect(store.toggleSkill("combining")).toBe(true);
     expect(store.snapshot().selectedSkills).toEqual(COMBINED);
@@ -123,7 +124,7 @@ describe("skill-aware local leaderboard and settings", () => {
     expect(reloaded.snapshot().settings).toEqual({ muted: true, reducedMotion: true });
   });
 
-  it("migrates v2 scores to all skills while defaulting selection to simple", () => {
+  it("migrates v2 scores and defaults the selection to all skills", () => {
     const storage = new MemoryStorage();
     storage.setItem(LEGACY_SAVE_KEY_V2, JSON.stringify({
       version: 2,
@@ -141,7 +142,7 @@ describe("skill-aware local leaderboard and settings", () => {
 
     const migrated = new GameStore(storage);
     expect(migrated.snapshot().version).toBe(3);
-    expect(migrated.snapshot().selectedSkills).toEqual(SIMPLE);
+    expect(migrated.snapshot().selectedSkills).toEqual(FRACTION_SKILL_ORDER);
     expect(migrated.snapshot().leaderboard[0]?.skills).toEqual(FRACTION_SKILL_ORDER);
     expect(migrated.snapshot().settings).toEqual({ muted: true, reducedMotion: false });
     expect(migrated.snapshot().instructionsSeen).toBe(true);
@@ -159,7 +160,7 @@ describe("skill-aware local leaderboard and settings", () => {
     expect(migrated.snapshot()).toEqual({
       version: 3,
       leaderboard: [],
-      selectedSkills: ["simple"],
+      selectedSkills: FRACTION_SKILL_ORDER,
       settings: { muted: true, reducedMotion: false },
       instructionsSeen: false,
     });
@@ -167,7 +168,7 @@ describe("skill-aware local leaderboard and settings", () => {
     storage.setItem(SAVE_KEY, "{not json");
     const recovered = new GameStore(storage);
     expect(recovered.snapshot().leaderboard).toEqual([]);
-    expect(recovered.snapshot().selectedSkills).toEqual(SIMPLE);
+    expect(recovered.snapshot().selectedSkills).toEqual(FRACTION_SKILL_ORDER);
     expect(recovered.snapshot().settings).toEqual({ muted: false, reducedMotion: false });
   });
 

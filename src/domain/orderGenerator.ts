@@ -175,7 +175,13 @@ export class SkillDeck {
   }
 
   next(): FractionSkillId {
-    if (this.queue.length === 0) this.queue = shuffle(this.skills, this.random);
+    if (this.queue.length === 0) {
+      const cycle = [...this.skills];
+      if (this.skills.length > 1 && this.skills.includes("combining")) {
+        cycle.push("combining");
+      }
+      this.queue = shuffle(cycle, this.random);
+    }
     return this.queue.shift()!;
   }
 }

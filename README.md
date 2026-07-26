@@ -18,9 +18,11 @@ leaderboard, Enter starts, and Escape closes the leaderboard. During play, use
 the arrow keys to focus wedges, Space to place or remove a topping, number keys
 to switch toppings, Enter to serve, and Escape to return to the menu.
 
-The selected skills appear in a shuffled deck, so each one is used once before
-any repeats. Selections persist on the device and are captured when a run
-starts. Every exact skill combination has its own local top 10.
+All five skills are selected on a fresh installation. Selected skills appear
+in a shuffled deck that guarantees every skill is used, with Combining
+Fractions included twice per cycle so multi-topping pizzas appear frequently.
+Selections persist on the device and are captured when a run starts. Every
+exact skill combination has its own local top 10.
 
 ## Quality checks
 
