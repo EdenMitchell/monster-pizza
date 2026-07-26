@@ -302,51 +302,122 @@ export class GameScene extends Phaser.Scene {
   private renderToppingToolbar(): void {
     const container = this.add.container(0, 0).setDepth(12);
     const available = this.challenge.requirements.map((requirement) => requirement.topping);
-    const startX = available.length === 1 ? 586 : 520;
+    const hasChoice = available.length > 1;
+    const panelX = 1145;
+    const panelY = hasChoice ? 318 : 258;
+    const panelHeight = hasChoice ? 410 : 290;
+    const panelShadow = this.add.rectangle(
+      panelX + 6,
+      panelY + 8,
+      232,
+      panelHeight,
+      COLORS.shadow,
+      0.3,
+    );
+    const panel = this.add
+      .rectangle(panelX, panelY, 232, panelHeight, COLORS.creamLight, 0.97)
+      .setStrokeStyle(4, COLORS.gold, 0.95);
+    const heading = this.add
+      .text(panelX, 142, hasChoice ? "CHOOSE TOPPING" : "TOPPING READY", {
+        fontFamily: FONT,
+        fontSize: "18px",
+        fontStyle: "bold",
+        color: "#8f2d2d",
+      })
+      .setOrigin(0.5);
+    const subheading = this.add
+      .text(
+        panelX,
+        169,
+        hasChoice ? "Tap a topping before the pizza" : "This order uses one topping",
+        {
+          fontFamily: FONT,
+          fontSize: "11px",
+          fontStyle: "bold",
+          color: "#146c6b",
+          align: "center",
+        },
+      )
+      .setOrigin(0.5);
+    container.add([panelShadow, panel, heading, subheading]);
+
     available.forEach((topping, index) => {
-      const x = startX + index * 146;
+      const x = panelX;
+      const y = hasChoice ? 244 + index * 132 : 250;
+      const height = hasChoice ? 112 : 126;
       const selected = topping === this.activeTopping;
-      const shadow = this.add.rectangle(x + 4, 635, 126, 92, COLORS.shadow, 0.26);
+      const glow = this.add.rectangle(
+        x,
+        y,
+        selected ? 212 : 202,
+        selected ? height + 12 : height + 2,
+        selected ? COLORS.gold : COLORS.shadow,
+        selected ? 0.46 : 0.18,
+      );
+      const shadow = this.add.rectangle(x + 4, y + 5, 198, height, COLORS.shadow, 0.3);
       const plate = this.add
-        .rectangle(x, 630, 126, 92, selected ? COLORS.creamLight : 0xe7d8b9, 0.98)
-        .setStrokeStyle(selected ? 6 : 3, selected ? COLORS.gold : COLORS.teal);
-      const icon = this.add.image(x - 32, 624, ASSET.toppings[topping]).setDisplaySize(62, 62);
+        .rectangle(x, y, 198, height, selected ? 0xffdf85 : 0x3f5550, 1)
+        .setStrokeStyle(selected ? 6 : 3, selected ? COLORS.teal : 0x9faaa3);
+      const icon = this.add
+        .image(x - 55, y + 4, ASSET.toppings[topping])
+        .setDisplaySize(hasChoice ? 66 : 74, hasChoice ? 66 : 74)
+        .setAlpha(selected ? 1 : 0.48);
+      const shortcutCircle = this.add
+        .circle(x - 78, y - height / 2 + 18, 16, selected ? COLORS.teal : 0x78817c)
+        .setStrokeStyle(2, COLORS.cream);
       const shortcut = this.add
-        .text(x + 37, 608, String(index + 1), {
+        .text(x - 78, y - height / 2 + 18, String(index + 1), {
           fontFamily: FONT,
           fontSize: "14px",
           fontStyle: "bold",
           color: "#fff8e8",
-          backgroundColor: "#146c6b",
-          padding: { x: 6, y: 3 },
         })
         .setOrigin(0.5);
       const label = this.add
-        .text(x + 25, 648, TOPPING_LABELS[topping], {
+        .text(x + 31, y - 13, TOPPING_LABELS[topping], {
           fontFamily: FONT,
-          fontSize: "11px",
+          fontSize: "15px",
           fontStyle: "bold",
-          color: "#38241d",
+          color: selected ? "#38241d" : "#fff8e8",
+        })
+        .setOrigin(0.5);
+      const status = this.add
+        .text(x + 31, y + 20, selected ? "✓  SELECTED" : "TAP TO SELECT", {
+          fontFamily: FONT,
+          fontSize: selected ? "13px" : "11px",
+          fontStyle: "bold",
+          color: selected ? "#146c6b" : "#f9d77c",
         })
         .setOrigin(0.5);
       const button = this.add
-        .zone(x, 630, 126, 92)
+        .zone(x, y, 198, height)
         .setInteractive({ useHandCursor: true })
         .on("pointerup", () => {
           this.activeTopping = topping;
           gameAudio.tap();
           this.renderToppingToolbar();
         });
-      container.add([shadow, plate, icon, shortcut, label, button]);
+      container.add([
+        glow,
+        shadow,
+        plate,
+        icon,
+        shortcutCircle,
+        shortcut,
+        label,
+        status,
+        button,
+      ]);
     });
+
     const instruction = this.add
-      .text(800, 626, "TAP SLICES", {
+      .text(panelX, hasChoice ? 482 : 363, "←  TAP PIZZA SLICES", {
         fontFamily: FONT,
-        fontSize: "16px",
+        fontSize: "13px",
         fontStyle: "bold",
-        color: "#38241d",
-        backgroundColor: "#fff2cf",
-        padding: { x: 15, y: 9 },
+        color: "#fff8e8",
+        backgroundColor: "#8f2d2d",
+        padding: { x: 12, y: 8 },
       })
       .setOrigin(0.5);
     container.add(instruction);
@@ -450,7 +521,7 @@ export class GameScene extends Phaser.Scene {
       0.006,
     );
     const pip = this.add
-      .image(1120, 220, ASSET.chefHint)
+      .image(370, 175, ASSET.chefHint)
       .setDisplaySize(132, 132)
       .setDepth(42);
     this.time.delayedCall(820, () => {
