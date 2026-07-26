@@ -6,7 +6,7 @@ export default function Home() {
       <h1 className="sr-only">Slice Rush</h1>
       <SliceRushGame />
       <p className="orientation-hint" aria-hidden="true">
-        Turn your device sideways for the busiest shift.
+        Turn your device sideways for the fastest service.
       </p>
     </main>
   );

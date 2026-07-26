@@ -4,19 +4,19 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Slice Rush — Run the Pizza Parlour",
   description:
-    "Serve perfectly portioned pizzas, race through five friendly shifts, and turn Chef Pip's little shop into a five-star parlour.",
+    "Race the clock, serve perfectly portioned pizzas, and earn a place on the local Slice Rush top ten.",
   icons: {
     icon: "/assets/topping-pepperoni.webp",
   },
   openGraph: {
     title: "Slice Rush",
-    description: "Portion pizzas, serve the rush, and build a five-star parlour.",
+    description: "You have 90 seconds to portion pizzas, serve the rush, and reach the local top ten.",
     images: ["/og.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Slice Rush",
-    description: "Portion pizzas, serve the rush, and build a five-star parlour.",
+    description: "You have 90 seconds to portion pizzas, serve the rush, and reach the local top ten.",
     images: ["/og.png"],
   },
 };

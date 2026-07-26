@@ -1,6 +1,6 @@
 export const ASSET = {
   exterior: "exterior",
-  interiors: ["interior-1", "interior-2", "interior-3", "interior-4", "interior-5"],
+  interior: "interior-5",
   chefWelcome: "chef-welcome",
   chefCelebrate: "chef-celebrate",
   chefHint: "chef-hint",
@@ -19,7 +19,7 @@ const ROOT = "/assets";
 
 export const IMAGE_ASSET_MANIFEST: readonly { readonly key: string; readonly path: string }[] = [
   { key: ASSET.exterior, path: `${ROOT}/exterior.webp` },
-  ...ASSET.interiors.map((key) => ({ key, path: `${ROOT}/${key}.webp` })),
+  { key: ASSET.interior, path: `${ROOT}/interior-5.webp` },
   { key: ASSET.chefWelcome, path: `${ROOT}/chef-welcome.webp` },
   { key: ASSET.chefCelebrate, path: `${ROOT}/chef-celebrate.webp` },
   { key: ASSET.chefHint, path: `${ROOT}/chef-hint.webp` },

@@ -28,30 +28,26 @@ export interface OrderSelection {
   readonly wedges: readonly (ToppingId | null)[];
 }
 
-export interface ShiftSnapshot {
+export interface GameSnapshot {
   readonly timeRemainingMs: number;
   readonly score: number;
   readonly streak: number;
   readonly served: number;
-  readonly tier: number;
   readonly started: boolean;
   readonly paused: boolean;
   readonly complete: boolean;
 }
 
-export interface ShiftRecord {
-  readonly stars: number;
-  readonly bestScore: number;
-  readonly bestServed: number;
+export interface RunResult {
+  readonly score: number;
+  readonly served: number;
   readonly bestStreak: number;
 }
 
-export interface ChefProfile {
+export interface LeaderboardEntry extends RunResult {
   readonly id: string;
   readonly name: string;
-  readonly avatarIndex: number;
-  readonly shiftRecords: Readonly<Record<string, ShiftRecord>>;
-  readonly tutorialSeen: boolean;
+  readonly playedAt: number;
 }
 
 export interface SliceRushSettings {
@@ -60,10 +56,10 @@ export interface SliceRushSettings {
 }
 
 export interface SliceRushSave {
-  readonly version: 1;
-  readonly activeProfileId?: string;
-  readonly profiles: readonly ChefProfile[];
+  readonly version: 2;
+  readonly leaderboard: readonly LeaderboardEntry[];
   readonly settings: SliceRushSettings;
+  readonly instructionsSeen: boolean;
 }
 
 export type RandomSource = () => number;

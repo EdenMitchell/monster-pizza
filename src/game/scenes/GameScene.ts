@@ -1,27 +1,25 @@
 import * as Phaser from "phaser";
-import { SLICE_RUSH_SHIFTS, starsForServed } from "../../config/shifts";
 import { formatFraction } from "../../domain/fractions";
-import { generateOrder } from "../../domain/orderGenerator";
+import { sanitizePlayerName } from "../../domain/gameStore";
+import { generateSpeedOrder } from "../../domain/orderGenerator";
 import {
   countTopping,
   createEmptySelection,
   selectionMatches,
   toggleWedge,
 } from "../../domain/selection";
-import { ShiftSession } from "../../domain/shiftSession";
+import { GameSession } from "../../domain/gameSession";
 import type {
+  GameSnapshot,
+  LeaderboardEntry,
   OrderChallenge,
   OrderSelection,
-  ShiftSnapshot,
+  RunResult,
   ToppingId,
 } from "../../domain/types";
 import { ASSET } from "../assets";
-import { gameAudio, profileStore } from "../runtime";
+import { gameAudio, gameStore } from "../runtime";
 import { addBackdrop, addPanel, addTextButton, COLORS, FONT } from "../ui";
-
-interface ShiftSceneData {
-  readonly shiftIndex?: number;
-}
 
 const TOPPING_LABELS: Record<ToppingId, string> = {
   pepperoni: "PEPPERONI",
@@ -46,15 +44,12 @@ const TOPPING_MARKS: Record<ToppingId, string> = {
 
 const CUSTOMER_NAMES = ["Koa", "Milly", "Ollie", "Tui"];
 
-export class ShiftScene extends Phaser.Scene {
-  private shiftIndex = 0;
-  private profileId = "";
-  private session!: ShiftSession;
-  private snapshot!: ShiftSnapshot;
+export class GameScene extends Phaser.Scene {
+  private session!: GameSession;
+  private snapshot!: GameSnapshot;
   private challenge!: OrderChallenge;
   private selection!: OrderSelection;
   private activeTopping: ToppingId = "pepperoni";
-  private orderIndex = 0;
   private orderStartedAt = 0;
   private focusedWedge = 0;
   private feedbackPending = false;
@@ -66,30 +61,19 @@ export class ShiftScene extends Phaser.Scene {
   private orderContainer?: Phaser.GameObjects.Container;
   private pizzaContainer?: Phaser.GameObjects.Container;
   private toppingContainer?: Phaser.GameObjects.Container;
-  private tutorialContainer?: Phaser.GameObjects.Container;
+  private nameEntry?: Phaser.GameObjects.DOMElement;
   private visibilityHandler?: () => void;
 
   constructor() {
-    super({ key: "shift" });
-  }
-
-  init(data: ShiftSceneData): void {
-    this.shiftIndex = Math.min(4, Math.max(0, data.shiftIndex ?? 0));
+    super({ key: "game" });
   }
 
   create(): void {
-    const profile = profileStore.activeProfile();
-    if (!profile) {
-      this.scene.start("chefs");
-      return;
-    }
-    this.profileId = profile.id;
-    const shift = SLICE_RUSH_SHIFTS[this.shiftIndex]!;
-    addBackdrop(this, ASSET.interiors[this.shiftIndex]!, 0.18);
+    addBackdrop(this, ASSET.interior, 0.18);
     this.add.rectangle(640, 48, 1280, 96, COLORS.tealDeep, 0.92).setDepth(20);
 
     this.add
-      .text(30, 24, `${shift.name}  •  90s`, {
+      .text(30, 24, "SLICE RUSH  •  90 SECOND SERVICE", {
         fontFamily: FONT,
         fontSize: "19px",
         fontStyle: "bold",
@@ -123,7 +107,7 @@ export class ShiftScene extends Phaser.Scene {
         color: "#f9d77c",
       })
       .setDepth(21);
-    addTextButton(this, 1201, 48, "SHOP", 112, 44, () => this.scene.start("shop"), {
+    addTextButton(this, 1201, 48, "MENU", 112, 44, () => this.scene.start("menu"), {
       color: COLORS.tomatoDeep,
       fontSize: 15,
     }).setDepth(22);
@@ -141,19 +125,15 @@ export class ShiftScene extends Phaser.Scene {
       .setDepth(30)
       .setVisible(false);
 
-    this.session = new ShiftSession({
-      maximumTier: shift.maximumTier,
-      waitForFirstServe: this.shiftIndex === 0 && !profile.tutorialSeen,
-    });
+    this.session = new GameSession();
     this.snapshot = this.session.begin(this.now());
-    this.challenge = generateOrder(this.shiftIndex, this.snapshot.tier, this.orderIndex);
+    this.challenge = generateSpeedOrder(this.snapshot.served);
     this.selection = createEmptySelection(this.challenge);
     this.activeTopping = this.challenge.requirements[0]!.topping;
     this.orderStartedAt = this.now();
 
     this.renderChallenge();
     this.bindKeyboard();
-    if (!this.snapshot.started) this.showTutorial();
 
     this.visibilityHandler = () => {
       if (document.hidden) {
@@ -173,7 +153,7 @@ export class ShiftScene extends Phaser.Scene {
     if (this.resultShown) return;
     this.snapshot = this.session.snapshot(this.now());
     this.refreshHud();
-    if (this.snapshot.complete && !this.feedbackPending) this.finishShift();
+    if (this.snapshot.complete && !this.feedbackPending) this.finishGame();
   }
 
   private renderChallenge(): void {
@@ -396,12 +376,6 @@ export class ShiftScene extends Phaser.Scene {
       this.snapshot = this.session.recordCorrect(responseTime, now);
       gameAudio.success(this.snapshot.streak);
       if (this.snapshot.streak >= 3) gameAudio.streak();
-      const profile = profileStore.activeProfile();
-      if (profile && !profile.tutorialSeen) {
-        profileStore.setTutorialSeen(profile.id);
-        this.tutorialContainer?.destroy(true);
-        this.tutorialContainer = undefined;
-      }
       this.showSuccessFeedback();
     } else {
       this.snapshot = this.session.recordMiss(responseTime, now);
@@ -424,7 +398,7 @@ export class ShiftScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(40);
     const box = this.add.image(760, 390, ASSET.pizzaBox).setDisplaySize(190, 190).setDepth(41);
-    const reduced = profileStore.snapshot().settings.reducedMotion;
+    const reduced = gameStore.snapshot().settings.reducedMotion;
     if (!reduced) {
       box.setScale(0.2);
       this.tweens.add({
@@ -451,11 +425,10 @@ export class ShiftScene extends Phaser.Scene {
       label.destroy();
       if (this.snapshot.complete) {
         this.feedbackPending = false;
-        this.finishShift();
+        this.finishGame();
         return;
       }
-      this.orderIndex += 1;
-      this.challenge = generateOrder(this.shiftIndex, this.snapshot.tier, this.orderIndex);
+      this.challenge = generateSpeedOrder(this.snapshot.served);
       this.selection = createEmptySelection(this.challenge);
       this.activeTopping = this.challenge.requirements[0]!.topping;
       this.focusedWedge = 0;
@@ -468,7 +441,7 @@ export class ShiftScene extends Phaser.Scene {
   private showMissFeedback(): void {
     this.hintText.setText(this.hintMessage()).setVisible(true);
     this.cameras.main.shake(
-      profileStore.snapshot().settings.reducedMotion ? 0 : 170,
+      gameStore.snapshot().settings.reducedMotion ? 0 : 170,
       0.006,
     );
     const pip = this.add
@@ -479,7 +452,7 @@ export class ShiftScene extends Phaser.Scene {
       pip.destroy();
       this.hintText.setVisible(false);
       this.feedbackPending = false;
-      if (this.snapshot.complete) this.finishShift();
+      if (this.snapshot.complete) this.finishGame();
     });
   }
 
@@ -492,145 +465,172 @@ export class ShiftScene extends Phaser.Scene {
       .join("  •  ");
   }
 
-  private showTutorial(): void {
-    const shadow = this.add.rectangle(648, 130, 640, 64, COLORS.shadow, 0.32);
-    const panel = this.add
-      .rectangle(640, 124, 640, 64, COLORS.creamLight, 0.98)
-      .setStrokeStyle(4, COLORS.gold);
-    const pip = this.add.image(344, 124, ASSET.chefHint).setDisplaySize(76, 76);
-    const text = this.add
-      .text(668, 124, "Tap pizza slices to match the order — then press SERVE!", {
-        fontFamily: FONT,
-        fontSize: "18px",
-        fontStyle: "bold",
-        color: "#38241d",
-      })
-      .setOrigin(0.5);
-    this.tutorialContainer = this.add.container(0, 0, [shadow, panel, pip, text]).setDepth(50);
-    if (!profileStore.snapshot().settings.reducedMotion) {
-      this.tweens.add({
-        targets: panel,
-        alpha: { from: 0.88, to: 1 },
-        duration: 900,
-        yoyo: true,
-        repeat: -1,
-      });
-    }
-  }
-
-  private finishShift(): void {
+  private finishGame(): void {
     if (this.resultShown) return;
     this.resultShown = true;
     this.feedbackPending = false;
     this.snapshot = this.session.finish(this.now());
-    const before = profileStore.activeProfile();
-    const shift = SLICE_RUSH_SHIFTS[this.shiftIndex]!;
-    const previousStars = before?.shiftRecords[shift.id]?.stars ?? 0;
-    const saved = profileStore.completeShift(
-      this.profileId,
-      this.shiftIndex,
-      this.snapshot.score,
-      this.snapshot.served,
-      this.session.getBestStreak(),
-    );
-    const stars = starsForServed(this.shiftIndex, this.snapshot.served);
-    const newUpgrade = stars >= 1 && previousStars === 0;
-    if (stars === 3) gameAudio.finale();
+    const result: RunResult = {
+      score: this.snapshot.score,
+      served: this.snapshot.served,
+      bestStreak: this.session.getBestStreak(),
+    };
+    const playedAt = Date.now();
+    const qualifies = gameStore.qualifiesForLeaderboard(result, playedAt);
+    if (qualifies) gameAudio.finale();
     else gameAudio.ding();
 
     this.add.rectangle(640, 360, 1280, 720, COLORS.tealDeep, 0.84).setDepth(100);
     addPanel(this, 640, 365, 830, 592, COLORS.creamLight, 0.99).setDepth(101);
     this.add
-      .image(424, 270, stars > 0 ? ASSET.chefCelebrate : ASSET.chefWelcome)
+      .image(415, 294, qualifies ? ASSET.chefCelebrate : ASSET.chefWelcome)
       .setDisplaySize(230, 230)
       .setDepth(102);
     this.add
-      .text(760, 146, "SHIFT COMPLETE!", {
+      .text(760, 142, "TIME!", {
         fontFamily: FONT,
-        fontSize: "42px",
+        fontSize: "48px",
         fontStyle: "bold",
         color: "#8f2d2d",
       })
       .setOrigin(0.5)
       .setDepth(102);
     this.add
-      .text(760, 222, this.starText(stars), {
+      .text(760, 224, this.snapshot.score.toLocaleString(), {
         fontFamily: FONT,
-        fontSize: "58px",
+        fontSize: "64px",
         fontStyle: "bold",
-        color: stars > 0 ? "#d89a19" : "#aa9a88",
+        color: "#146c6b",
+      })
+      .setOrigin(0.5)
+      .setDepth(102);
+    this.add
+      .text(760, 270, "POINTS", {
+        fontFamily: FONT,
+        fontSize: "16px",
+        fontStyle: "bold",
+        color: "#6d5144",
       })
       .setOrigin(0.5)
       .setDepth(102);
     this.add
       .text(
         760,
-        330,
-        `PIZZAS SERVED  ${this.snapshot.served}\nSCORE  ${this.snapshot.score}\nBEST STREAK  ${this.session.getBestStreak()}`,
+        324,
+        `PIZZAS SERVED  ${this.snapshot.served}     •     BEST STREAK  ${this.session.getBestStreak()}`,
         {
           fontFamily: FONT,
-          fontSize: "21px",
+          fontSize: "19px",
           fontStyle: "bold",
           color: "#38241d",
           align: "center",
-          lineSpacing: 13,
         },
       )
       .setOrigin(0.5)
       .setDepth(102);
 
-    const message = newUpgrade
-      ? `MAKEOVER UNLOCKED!\n${shift.upgrade}`
-      : stars === 0
-        ? `Serve ${shift.starThresholds[0]} pizzas to unlock the makeover.\nYour best score is safe — have another go!`
-        : `Great shift! ${saved.shiftRecords[shift.id]?.bestServed ?? 0} is your best service.`;
+    if (qualifies) {
+      this.showNameEntry(result, playedAt);
+    } else {
+      this.showResultActions("Great rush — chase the local top 10!");
+    }
+  }
+
+  private showNameEntry(result: RunResult, playedAt: number): void {
     this.add
-      .text(640, 472, message, {
+      .text(760, 372, "YOU MADE THE TOP 10!", {
         fontFamily: FONT,
-        fontSize: "19px",
+        fontSize: "24px",
         fontStyle: "bold",
-        color: newUpgrade ? "#146c6b" : "#6d5144",
+        color: "#8f2d2d",
         align: "center",
-        lineSpacing: 8,
-        wordWrap: { width: 680 },
       })
       .setOrigin(0.5)
       .setDepth(102);
 
+    const form = document.createElement("form");
+    form.className = "score-entry";
+    form.setAttribute("aria-label", "Save a top ten score");
+    const label = document.createElement("label");
+    label.htmlFor = "slice-rush-player-name";
+    label.textContent = "ENTER YOUR NAME";
+    const input = document.createElement("input");
+    input.id = "slice-rush-player-name";
+    input.name = "playerName";
+    input.type = "text";
+    input.maxLength = 12;
+    input.setAttribute("autocomplete", "nickname");
+    input.placeholder = "PLAYER";
+    input.setAttribute("aria-describedby", "slice-rush-name-error");
+    const error = document.createElement("span");
+    error.id = "slice-rush-name-error";
+    error.className = "score-entry__error";
+    error.setAttribute("aria-live", "polite");
+    const actions = document.createElement("div");
+    actions.className = "score-entry__actions";
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.textContent = "SAVE SCORE";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "score-entry__skip";
+    skip.textContent = "SKIP";
+    actions.append(save, skip);
+    form.append(label, input, error, actions);
+
+    const closeEntry = (entry?: LeaderboardEntry) => {
+      this.nameEntry?.destroy();
+      this.nameEntry = undefined;
+      this.showResultActions(entry ? `Score saved as ${entry.name}!` : "Score not saved — ready for another rush?");
+    };
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const cleanName = sanitizePlayerName(input.value);
+      if (!cleanName) {
+        error.textContent = "Please enter at least one letter or number.";
+        input.focus();
+        return;
+      }
+      const entry = gameStore.addLeaderboardEntry(cleanName, result, playedAt);
+      if (entry) gameAudio.unlock();
+      closeEntry(entry);
+    });
+    skip.addEventListener("click", () => closeEntry());
+    this.nameEntry = this.add.dom(760, 493, form).setDepth(110);
+    this.time.delayedCall(100, () => input.focus());
+  }
+
+  private showResultActions(message: string): void {
+    this.add
+      .text(760, 438, message, {
+        fontFamily: FONT,
+        fontSize: "19px",
+        fontStyle: "bold",
+        color: "#6d5144",
+        align: "center",
+        wordWrap: { width: 470 },
+      })
+      .setOrigin(0.5)
+      .setDepth(102);
     addTextButton(
       this,
-      410,
-      592,
+      605,
+      562,
       "PLAY AGAIN",
-      205,
-      58,
-      () => this.scene.restart({ shiftIndex: this.shiftIndex }),
-      { color: COLORS.tomato, fontSize: 18 },
+      220,
+      62,
+      () => this.scene.restart(),
+      { color: COLORS.tomato, fontSize: 19 },
     ).setDepth(103);
-    const nextUnlocked =
-      this.shiftIndex < SLICE_RUSH_SHIFTS.length - 1 &&
-      profileStore.isShiftUnlocked(saved, this.shiftIndex + 1);
-    if (nextUnlocked) {
-      addTextButton(
-        this,
-        640,
-        592,
-        "NEXT SHIFT",
-        205,
-        58,
-        () => this.scene.restart({ shiftIndex: this.shiftIndex + 1 }),
-        { color: COLORS.basil, fontSize: 18 },
-      ).setDepth(103);
-    }
     addTextButton(
       this,
-      nextUnlocked ? 870 : 755,
-      592,
-      "BACK TO SHOP",
-      205,
-      58,
-      () => this.scene.start("shop"),
-      { color: COLORS.teal, fontSize: 17 },
+      850,
+      562,
+      "LEADERBOARD",
+      220,
+      62,
+      () => this.scene.start("menu"),
+      { color: COLORS.teal, fontSize: 18 },
     ).setDepth(103);
   }
 
@@ -657,7 +657,7 @@ export class ShiftScene extends Phaser.Scene {
     keyboard.on("keydown-DOWN", this.focusNext, this);
     keyboard.on("keydown-SPACE", this.toggleFocused, this);
     keyboard.on("keydown-ENTER", this.serveOrder, this);
-    keyboard.on("keydown-ESC", this.returnToShop, this);
+    keyboard.on("keydown-ESC", this.returnToMenu, this);
     keyboard.on("keydown-ONE", () => this.chooseTopping(0));
     keyboard.on("keydown-TWO", () => this.chooseTopping(1));
   }
@@ -681,6 +681,7 @@ export class ShiftScene extends Phaser.Scene {
   }
 
   private chooseTopping(index: number): void {
+    if (this.resultShown) return;
     const topping = this.challenge.requirements[index]?.topping;
     if (topping) {
       this.activeTopping = topping;
@@ -688,8 +689,8 @@ export class ShiftScene extends Phaser.Scene {
     }
   }
 
-  private returnToShop(): void {
-    if (!this.resultShown) this.scene.start("shop");
+  private returnToMenu(): void {
+    if (!this.resultShown) this.scene.start("menu");
   }
 
   private cleanUp(): void {
@@ -703,7 +704,8 @@ export class ShiftScene extends Phaser.Scene {
     keyboard?.off("keydown-DOWN", this.focusNext, this);
     keyboard?.off("keydown-SPACE", this.toggleFocused, this);
     keyboard?.off("keydown-ENTER", this.serveOrder, this);
-    keyboard?.off("keydown-ESC", this.returnToShop, this);
+    keyboard?.off("keydown-ESC", this.returnToMenu, this);
+    this.nameEntry?.destroy();
   }
 
   private orderTitle(): string {
@@ -711,10 +713,6 @@ export class ShiftScene extends Phaser.Scene {
     if (this.challenge.kind === "split") return "TWO-TOPPING SPECIAL!";
     if (this.challenge.kind === "mixed") return "BIG TABLE ORDER!";
     return "MAKE IT JUST RIGHT!";
-  }
-
-  private starText(stars: number): string {
-    return Array.from({ length: 3 }, (_, index) => (index < stars ? "★" : "☆")).join(" ");
   }
 
   private now(): number {

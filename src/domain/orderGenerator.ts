@@ -30,84 +30,79 @@ function requirement(
   };
 }
 
-function challengeId(stageIndex: number, tier: number, orderIndex: number, random: RandomSource) {
-  return `order-${stageIndex}-${tier}-${orderIndex}-${Math.floor(random() * 1_000_000)}`;
+export type SpeedOrderPhase = "basics" | "eighths" | "equivalence" | "split" | "finale";
+
+export function speedOrderPhase(servedCount: number): SpeedOrderPhase {
+  if (servedCount < 2) return "basics";
+  if (servedCount < 4) return "eighths";
+  if (servedCount < 6) return "equivalence";
+  if (servedCount < 8) return "split";
+  return "finale";
+}
+
+function challengeId(phase: SpeedOrderPhase, servedCount: number, random: RandomSource) {
+  return `order-${phase}-${servedCount}-${Math.floor(random() * 1_000_000)}`;
 }
 
 function makeChallenge(
-  stageIndex: number,
-  tier: number,
-  orderIndex: number,
+  phase: "basics" | "eighths",
+  servedCount: number,
   random: RandomSource,
 ): OrderChallenge {
-  const denominatorSets = stageIndex === 0
-    ? tier === 0 ? [2] : [2, 4]
-    : tier === 0 ? [3] : tier === 1 ? [3, 6] : [6, 8];
-  const boardDenominator = pick(denominatorSets, random);
+  const boardDenominator = pick(phase === "basics" ? [2, 4] : [3, 6, 8], random);
   const numerator = integer(1, boardDenominator - 1, random);
-  const topping = TOPPINGS[(stageIndex + orderIndex) % TOPPINGS.length]!;
+  const topping = TOPPINGS[servedCount % TOPPINGS.length]!;
   const fraction = { numerator, denominator: boardDenominator };
   return {
-    id: challengeId(stageIndex, tier, orderIndex, random),
+    id: challengeId(phase, servedCount, random),
     kind: "make",
     boardDenominator,
     pizzaCount: 1,
     requirements: [requirement(topping, fraction, boardDenominator)],
-    visualGuide: stageIndex === 0 || tier === 0,
+    visualGuide: phase === "basics",
     customerIndex: integer(0, 3, random),
   };
 }
 
 function equivalentChallenge(
-  stageIndex: number,
-  tier: number,
-  orderIndex: number,
+  phase: "equivalence" | "finale",
+  servedCount: number,
   random: RandomSource,
 ): OrderChallenge {
-  const candidates = tier === 0
-    ? [
-        { display: { numerator: 1, denominator: 2 }, board: 4 },
-        { display: { numerator: 1, denominator: 2 }, board: 6 },
-      ]
-    : tier === 1
-      ? [
-          { display: { numerator: 1, denominator: 3 }, board: 6 },
-          { display: { numerator: 2, denominator: 3 }, board: 6 },
-          { display: { numerator: 1, denominator: 2 }, board: 8 },
-        ]
-      : [
-          { display: { numerator: 1, denominator: 4 }, board: 8 },
-          { display: { numerator: 3, denominator: 4 }, board: 8 },
-          { display: { numerator: 2, denominator: 3 }, board: 6 },
-          { display: { numerator: 1, denominator: 2 }, board: 8 },
-        ];
+  const candidates = [
+    { display: { numerator: 1, denominator: 2 }, board: 4 },
+    { display: { numerator: 1, denominator: 2 }, board: 6 },
+    { display: { numerator: 1, denominator: 3 }, board: 6 },
+    { display: { numerator: 2, denominator: 3 }, board: 6 },
+    { display: { numerator: 1, denominator: 4 }, board: 8 },
+    { display: { numerator: 3, denominator: 4 }, board: 8 },
+  ];
   const selected = pick(candidates, random);
-  const topping = TOPPINGS[(orderIndex + 1) % TOPPINGS.length]!;
+  const topping = TOPPINGS[(servedCount + 1) % TOPPINGS.length]!;
   return {
-    id: challengeId(stageIndex, tier, orderIndex, random),
+    id: challengeId(phase, servedCount, random),
     kind: "equivalent",
     boardDenominator: selected.board,
     pizzaCount: 1,
     requirements: [requirement(topping, selected.display, selected.board)],
-    visualGuide: tier === 0 && orderIndex < 2,
+    visualGuide: false,
     customerIndex: integer(0, 3, random),
   };
 }
 
 function splitChallenge(
-  stageIndex: number,
-  tier: number,
-  orderIndex: number,
+  phase: "split" | "finale",
+  servedCount: number,
   random: RandomSource,
 ): OrderChallenge {
-  const boardDenominator = pick(tier === 0 ? [4] : tier === 1 ? [4, 6] : [6, 8], random);
+  const boardDenominator = pick(phase === "split" ? [4, 6] : [6, 8], random);
   const firstWedges = integer(1, Math.max(1, Math.floor(boardDenominator / 2)), random);
   const maximumSecond = Math.max(1, boardDenominator - firstWedges);
   const secondWedges = integer(1, maximumSecond, random);
-  const firstTopping = TOPPINGS[orderIndex % TOPPINGS.length]!;
-  const secondTopping = TOPPINGS[(orderIndex + 1) % TOPPINGS.length]!;
+  const firstTopping = TOPPINGS[servedCount % TOPPINGS.length]!;
+  const secondTopping = TOPPINGS[(servedCount + 1) % TOPPINGS.length]!;
   return {
-    id: challengeId(stageIndex, tier, orderIndex, random),
+    id: challengeId(phase, servedCount, random),
     kind: "split",
     boardDenominator,
     pizzaCount: 1,
@@ -123,55 +118,50 @@ function splitChallenge(
         boardDenominator,
       ),
     ],
-    visualGuide: tier === 0 && orderIndex < 2,
+    visualGuide: false,
     customerIndex: integer(0, 3, random),
   };
 }
 
 function mixedChallenge(
-  stageIndex: number,
-  tier: number,
-  orderIndex: number,
+  servedCount: number,
   random: RandomSource,
 ): OrderChallenge {
-  const boardDenominator = pick(tier === 0 ? [2] : tier === 1 ? [2, 3, 4] : [3, 4, 6], random);
+  const boardDenominator = pick([3, 4, 6], random);
   const remainder = integer(1, boardDenominator - 1, random);
   const improper = {
     numerator: boardDenominator + remainder,
     denominator: boardDenominator,
   };
-  const topping = TOPPINGS[(orderIndex + 2) % TOPPINGS.length]!;
+  const topping = TOPPINGS[(servedCount + 2) % TOPPINGS.length]!;
   return {
-    id: challengeId(stageIndex, tier, orderIndex, random),
+    id: challengeId("finale", servedCount, random),
     kind: "mixed",
     boardDenominator,
     pizzaCount: 2,
     requirements: [requirement(topping, improper, boardDenominator, 2)],
-    visualGuide: tier === 0 && orderIndex < 2,
+    visualGuide: false,
     customerIndex: integer(0, 3, random),
   };
 }
 
-export function generateOrder(
-  stageIndex: number,
-  tier: number,
-  orderIndex: number,
+export function generateSpeedOrder(
+  servedCount: number,
   random: RandomSource = Math.random,
 ): OrderChallenge {
-  if (!Number.isInteger(stageIndex) || stageIndex < 0 || stageIndex > 4) {
-    throw new Error("Unknown Slice Rush shift.");
+  if (!Number.isInteger(servedCount) || servedCount < 0) {
+    throw new Error("Served count must be a non-negative integer.");
   }
-  if (!Number.isInteger(tier) || tier < 0 || tier > 2) {
-    throw new Error("Unknown Slice Rush difficulty tier.");
+  const phase = speedOrderPhase(servedCount);
+  if (phase === "basics" || phase === "eighths") {
+    return makeChallenge(phase, servedCount, random);
   }
-  if (stageIndex <= 1) return makeChallenge(stageIndex, tier, orderIndex, random);
-  if (stageIndex === 2) return equivalentChallenge(stageIndex, tier, orderIndex, random);
-  if (stageIndex === 3) return splitChallenge(stageIndex, tier, orderIndex, random);
-  if (orderIndex % 3 === 0) return mixedChallenge(stageIndex, tier, orderIndex, random);
-  if (orderIndex % 3 === 1) {
-    return equivalentChallenge(stageIndex, tier, orderIndex, random);
-  }
-  return splitChallenge(stageIndex, tier, orderIndex, random);
+  if (phase === "equivalence") return equivalentChallenge(phase, servedCount, random);
+  if (phase === "split") return splitChallenge(phase, servedCount, random);
+  const finaleIndex = (servedCount - 8) % 3;
+  if (finaleIndex === 0) return mixedChallenge(servedCount, random);
+  if (finaleIndex === 1) return equivalentChallenge("finale", servedCount, random);
+  return splitChallenge("finale", servedCount, random);
 }
 
 export function orderIsConstructivelyValid(order: OrderChallenge): boolean {

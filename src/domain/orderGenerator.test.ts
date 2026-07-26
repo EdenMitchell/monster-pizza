@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { fractionsEqual } from "./fractions";
-import { generateOrder, orderIsConstructivelyValid } from "./orderGenerator";
+import {
+  generateSpeedOrder,
+  orderIsConstructivelyValid,
+  speedOrderPhase,
+} from "./orderGenerator";
 
 function seededRandom(seed: number): () => number {
   let state = seed >>> 0;
@@ -10,27 +14,54 @@ function seededRandom(seed: number): () => number {
   };
 }
 
-describe("constructive order generation", () => {
-  for (let stage = 0; stage < 5; stage += 1) {
-    for (let tier = 0; tier < 3; tier += 1) {
-      it(`generates 1,000 valid stage ${stage + 1}, tier ${tier + 1} orders`, () => {
-        const random = seededRandom(10_000 + stage * 100 + tier);
-        for (let index = 0; index < 1_000; index += 1) {
-          const order = generateOrder(stage, tier, index, random);
-          expect(orderIsConstructivelyValid(order)).toBe(true);
-          expect(order.requirements.every((item) => item.fraction.numerator > 0)).toBe(true);
-          expect(
-            order.requirements.reduce((sum, item) => sum + item.requiredWedges, 0),
-          ).toBeLessThanOrEqual(order.boardDenominator * order.pizzaCount);
-        }
-      });
-    }
+describe("single-run order ramp", () => {
+  const phaseCases = [
+    { served: 0, phase: "basics", kinds: ["make"] },
+    { served: 2, phase: "eighths", kinds: ["make"] },
+    { served: 4, phase: "equivalence", kinds: ["equivalent"] },
+    { served: 6, phase: "split", kinds: ["split"] },
+    { served: 8, phase: "finale", kinds: ["mixed", "equivalent", "split"] },
+  ] as const;
+
+  for (const [caseIndex, phaseCase] of phaseCases.entries()) {
+    it(`generates 1,000 valid ${phaseCase.phase} orders`, () => {
+      const random = seededRandom(1_000 + caseIndex);
+      const observedKinds = new Set<string>();
+      for (let index = 0; index < 1_000; index += 1) {
+        const served = phaseCase.phase === "finale"
+          ? phaseCase.served + (index % 3)
+          : phaseCase.served;
+        const order = generateSpeedOrder(served, random);
+        observedKinds.add(order.kind);
+        expect(orderIsConstructivelyValid(order)).toBe(true);
+        expect(order.requirements.every((item) => item.fraction.numerator > 0)).toBe(true);
+        expect(order.requirements.reduce((sum, item) => sum + item.requiredWedges, 0))
+          .toBeLessThanOrEqual(order.boardDenominator * order.pizzaCount);
+      }
+      expect(observedKinds).toEqual(new Set(phaseCase.kinds));
+    });
   }
 
-  it("uses different written and physical partitions for equivalence orders", () => {
+  it("changes phase only at the documented served-count boundaries", () => {
+    expect(Array.from({ length: 11 }, (_, served) => speedOrderPhase(served))).toEqual([
+      "basics",
+      "basics",
+      "eighths",
+      "eighths",
+      "equivalence",
+      "equivalence",
+      "split",
+      "split",
+      "finale",
+      "finale",
+      "finale",
+    ]);
+  });
+
+  it("keeps written fractions equivalent to physical slices", () => {
     const random = seededRandom(77);
     for (let index = 0; index < 100; index += 1) {
-      const order = generateOrder(2, 2, index, random);
+      const order = generateSpeedOrder(4, random);
       expect(order.kind).toBe("equivalent");
       expect(order.requirements[0]!.fraction.denominator).not.toBe(order.boardDenominator);
       expect(
@@ -40,13 +71,5 @@ describe("constructive order generation", () => {
         }),
       ).toBe(true);
     }
-  });
-
-  it("interleaves mixed, equivalent, and split orders in the finale", () => {
-    const kinds = Array.from(
-      { length: 12 },
-      (_, index) => generateOrder(4, 2, index, seededRandom(index + 1)).kind,
-    );
-    expect(new Set(kinds)).toEqual(new Set(["mixed", "equivalent", "split"]));
   });
 });

@@ -1,4 +1,4 @@
-import { ProfileStore } from "../domain/profileStore";
+import { GameStore } from "../domain/gameStore";
 import { ProceduralAudio } from "./audio";
 
 const memoryStorage = new Map<string, string>();
@@ -13,5 +13,5 @@ const fallbackStorage = {
 
 const storage = typeof window !== "undefined" ? window.localStorage : fallbackStorage;
 
-export const profileStore = new ProfileStore(storage);
-export const gameAudio = new ProceduralAudio(() => profileStore.snapshot().settings.muted);
+export const gameStore = new GameStore(storage);
+export const gameAudio = new ProceduralAudio(() => gameStore.snapshot().settings.muted);

@@ -1,8 +1,7 @@
 import * as Phaser from "phaser";
-import { ChefScene } from "./scenes/ChefScene";
+import { GameScene } from "./scenes/GameScene";
+import { MenuScene } from "./scenes/MenuScene";
 import { PreloadScene } from "./scenes/PreloadScene";
-import { ShiftScene } from "./scenes/ShiftScene";
-import { ShopScene } from "./scenes/ShopScene";
 
 export function createSliceRushGame(parent: HTMLElement): Phaser.Game {
   const game = new Phaser.Game({
@@ -25,14 +24,17 @@ export function createSliceRushGame(parent: HTMLElement): Phaser.Game {
       activePointers: 3,
       keyboard: true,
     },
-    scene: [PreloadScene, ChefScene, ShopScene, ShiftScene],
+    dom: {
+      createContainer: true,
+    },
+    scene: [PreloadScene, MenuScene, GameScene],
     callbacks: {
       postBoot: (bootedGame) => {
         bootedGame.canvas.setAttribute("role", "application");
         bootedGame.canvas.setAttribute("tabindex", "0");
         bootedGame.canvas.setAttribute(
           "aria-label",
-          "Slice Rush arcade. Choose a chef, select a restaurant shift, portion pizza wedges to match customer orders, and serve before the friendly ninety-second rush ends.",
+          "Slice Rush arcade. Start a ninety-second game, portion pizza wedges to match customer orders, serve quickly, and compete for the local top ten.",
         );
       },
     },
