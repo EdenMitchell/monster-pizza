@@ -21,14 +21,14 @@ export class PreloadScene extends Phaser.Scene {
       repeat: -1,
     });
     const loading = this.add
-      .text(640, 455, "HEATING THE OVEN…", {
+      .text(640, 455, "WAKING THE MONSTER OVEN…", {
         fontFamily: FONT,
         fontSize: "30px",
         fontStyle: "bold",
         color: "#fff8e8",
       })
       .setOrigin(0.5);
-    this.load.on("complete", () => loading.setText("READY TO RUSH!"));
+    this.load.on("complete", () => loading.setText("THE MONSTERS ARE HUNGRY!"));
     IMAGE_ASSET_MANIFEST.forEach(({ key, path }) => this.load.image(key, path));
   }
 

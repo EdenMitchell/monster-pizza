@@ -1,34 +1,39 @@
-# Slice Rush ImageGen art direction
+# Monster Pizza ImageGen art direction
 
-All raster artwork in `public/assets` and `public/og.png` was created with the
-built-in ImageGen workflow specifically for Slice Rush. No artwork was copied
-from the `maths-gamer` reference project.
+All current raster artwork in `public/assets/monster-*.webp` and
+`public/og.png` was created with the built-in ImageGen workflow specifically
+for Monster Pizza. No artwork was copied from the `maths-gamer` reference
+project.
 
 ## Shared direction
 
-Warm, premium 3D-cartoon pizza parlour; friendly for ages 6–12; tomato red,
-mozzarella cream, basil green, teal, and golden yellow; rounded forms, tactile
-materials, soft cinematic lighting, readable silhouettes, no watermarks, no
-embedded instructional text, and open areas reserved for code-rendered UI.
+Friendly premium 3D-cartoon monster pizzeria for ages 6–12. The world uses
+muted plum, dusty violet, and deep teal, with cream and gold frames and crisp
+colour reserved for characters, food, and interactive UI. Monsters are funny
+and appealing rather than scary. Gross ingredients resemble toys or gummy
+candy: never realistic, bloody, or gory.
 
-## Generated sets
+The gameplay kitchen was deliberately generated with broad matte shapes, low
+detail, subdued contrast, and an empty central work area. It sets the scene
+without competing with the pizza, order card, topping selector, or Serve
+button.
 
-- `exterior.webp`: inviting evening shopfront and menu backdrop.
-- `interior-1.webp` through `interior-5.webp`: one consistent room that gains,
-  in order, signage, oven equipment and pendant lights, booths, fairy lights,
-  and a five-star trophy wall.
-- `chef-welcome.webp`, `chef-celebrate.webp`, `chef-hint.webp`: framed Chef Pip
-  red-panda portraits with welcoming, triumphant, and gentle coaching poses.
-- Four customer cards: koala, rabbit, otter, and tortoise, each visually
-  distinct but in the same framed portrait system.
-- `pizza-base.png` and `pizza-box.png`: isolated top-down food and serving
-  sprites generated against chroma key, keyed with the ImageGen helper, and
-  inspected for clean alpha edges.
-- Four topping icons: pepperoni, mushroom, olive, and green pepper, each on a
-  consistent simple background and reinforced in play with a unique symbol.
-- `og.png`: Chef Pip presents a sliced pizza in the completed parlour beside
-  the exact dimensional title “SLICE RUSH”.
+## Generated set
 
-The first interior was used as the reference anchor for the remaining four
-interiors. All fraction text, slice divisions, icons, and game-state labels are
-rendered in code so the mathematical geometry is exact.
+- `monster-exterior.webp`: quiet purple-twilight pizzeria menu backdrop with a
+  one-eyed shop emblem and no embedded text.
+- `monster-interior.webp`: soft, low-contrast kitchen with a monster oven,
+  simple shelves, and an open counter.
+- `monster-chef-welcome.webp`, `monster-chef-celebrate.webp`, and
+  `monster-chef-hint.webp`: one consistent purple horned chef eating a gross
+  pizza, celebrating with a trophy, and offering gentle help.
+- Four framed customer portraits: Gloop, Munch, Boggles, and Fizz.
+- Four framed monster-food icons: fried slugs, zombie-brain bites, pickled
+  eyes, and swamp worms.
+- `og.png`: the monster chef eats a gross pizza beside the exact title
+  “MONSTER PIZZA” and subtitle “90-SECOND FRACTION FEAST”.
+
+The existing isolated pizza base and serving box remain because their clean
+silhouettes support the interaction. All fraction text, slice divisions,
+ingredient allocation marks, and game-state labels are rendered in code so
+the mathematical geometry is exact.

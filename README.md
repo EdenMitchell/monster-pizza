@@ -1,9 +1,10 @@
-# Slice Rush
+# Monster Pizza
 
-Slice Rush is a polished, device-local fractions game for ages 6–12. Teachers
-choose the fraction skills, then players have 90 seconds to portion topping
-shares directly onto pizzas, build a hot streak, and earn a place on that
-skill setup's device-local top-10 leaderboard.
+Monster Pizza is a polished, device-local fractions game for ages 6–12.
+Teachers choose the fraction skills, then players have 90 seconds to portion
+fried slugs, zombie brains, pickled eyes, and swamp worms directly onto pizzas,
+build a hot streak, and earn a place on that skill setup's device-local top-10
+leaderboard.
 
 ## Play
 
@@ -15,8 +16,8 @@ npm run dev
 Choose one or more skills, then press `START GAME`; the timer begins
 immediately. On the menu, 1–5 toggle skills, `L` opens the active setup's
 leaderboard, Enter starts, and Escape closes the leaderboard. During play, use
-the arrow keys to focus wedges, Space to place or remove a topping, number keys
-to switch toppings, Enter to serve, and Escape to return to the menu.
+the arrow keys to focus wedges, Space to place or remove an ingredient, number
+keys to switch ingredients, Enter to serve, and Escape to return to the menu.
 
 All five skills are selected on a fresh installation. Selected skills appear
 in a shuffled deck that guarantees every skill is used, with Combining

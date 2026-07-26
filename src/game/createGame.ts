@@ -34,7 +34,7 @@ export function createSliceRushGame(parent: HTMLElement): Phaser.Game {
         bootedGame.canvas.setAttribute("tabindex", "0");
         bootedGame.canvas.setAttribute(
           "aria-label",
-          "Slice Rush arcade. Start a ninety-second game, portion pizza wedges to match customer orders, serve quickly, and compete for the local top ten.",
+          "Monster Pizza arcade. Start a ninety-second game, portion gross pizza ingredients to match monster orders, serve quickly, and compete for the local top ten.",
         );
       },
     },

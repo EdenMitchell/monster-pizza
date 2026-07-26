@@ -47,9 +47,9 @@ export function SliceRushGame() {
     <div
       ref={hostRef}
       className="game-host"
-      aria-label="Slice Rush pizza parlour fractions arcade game"
+      aria-label="Monster Pizza fractions arcade game"
     >
-      {loading ? <div className="game-loading">HEATING THE OVEN…</div> : null}
+      {loading ? <div className="game-loading">WAKING THE MONSTER OVEN…</div> : null}
     </div>
   );
 }

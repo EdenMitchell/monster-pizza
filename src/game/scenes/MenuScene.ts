@@ -16,10 +16,10 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    addBackdrop(this, ASSET.exterior, 0.28);
+    addBackdrop(this, ASSET.exterior, 0.2);
     this.add.rectangle(640, 58, 1280, 116, COLORS.tealDeep, 0.88);
     this.add
-      .text(640, 54, "SLICE RUSH", {
+      .text(640, 54, "MONSTER PIZZA", {
         fontFamily: FONT,
         fontSize: "54px",
         fontStyle: "bold",
@@ -42,9 +42,9 @@ export class MenuScene extends Phaser.Scene {
     addPanel(this, 352, 379, 594, 522, COLORS.creamLight, 0.98);
     this.add
       .image(154, 210, ASSET.chefWelcome)
-      .setDisplaySize(145, 145);
+      .setDisplaySize(180, 180);
     this.add
-      .text(420, 166, "READY FOR THE RUSH?", {
+      .text(432, 166, "FEED THE MONSTERS!", {
         fontFamily: FONT,
         fontSize: "28px",
         fontStyle: "bold",
@@ -52,7 +52,7 @@ export class MenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
     this.add
-      .text(420, 226, "90 seconds. Serve as many perfect pizzas as you can.", {
+      .text(432, 226, "90 seconds. Serve as many perfectly gross pizzas as you can.", {
         fontFamily: FONT,
         fontSize: "16px",
         fontStyle: "bold",
@@ -71,9 +71,9 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const instructions = [
-      ["READ", "Check the fraction order"],
-      ["TOP", "Tap the pizza slices"],
-      ["SERVE", "Send the perfect pizza"],
+      ["READ", "Check the monster's order"],
+      ["TOP", "Add the gross ingredients"],
+      ["SERVE", "Feed the hungry monster"],
     ] as const;
     instructions.forEach(([title, copy], index) => {
       const x = 150 + index * 202;

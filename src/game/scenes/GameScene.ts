@@ -23,27 +23,27 @@ import { gameAudio, gameStore } from "../runtime";
 import { addBackdrop, addPanel, addTextButton, COLORS, FONT } from "../ui";
 
 const TOPPING_LABELS: Record<ToppingId, string> = {
-  pepperoni: "PEPPERONI",
-  mushroom: "MUSHROOM",
-  olive: "OLIVES",
-  pepper: "PEPPERS",
+  pepperoni: "FRIED SLUGS",
+  mushroom: "ZOMBIE BRAINS",
+  olive: "PICKLED EYES",
+  pepper: "SWAMP WORMS",
 };
 
 const TOPPING_COLORS: Record<ToppingId, number> = {
-  pepperoni: 0xdc493a,
-  mushroom: 0xe0ad47,
-  olive: 0x156d6b,
-  pepper: 0x6a9d43,
+  pepperoni: 0xd98a2b,
+  mushroom: 0xc35b8d,
+  olive: 0x268e87,
+  pepper: 0x6f9f3f,
 };
 
 const TOPPING_MARKS: Record<ToppingId, string> = {
-  pepperoni: "●",
-  mushroom: "◆",
-  olive: "○",
-  pepper: "≈",
+  pepperoni: "≈",
+  mushroom: "≋",
+  olive: "◉",
+  pepper: "∿",
 };
 
-const CUSTOMER_NAMES = ["Koa", "Milly", "Ollie", "Tui"];
+const CUSTOMER_NAMES = ["Gloop", "Munch", "Boggles", "Fizz"];
 
 export class GameScene extends Phaser.Scene {
   private session!: GameSession;
@@ -72,11 +72,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    addBackdrop(this, ASSET.interior, 0.18);
+    addBackdrop(this, ASSET.interior, 0.06);
     this.add.rectangle(640, 48, 1280, 96, COLORS.tealDeep, 0.92).setDepth(20);
 
     this.add
-      .text(30, 24, "SLICE RUSH  •  90 SECOND SERVICE", {
+      .text(30, 24, "MONSTER PIZZA  •  90 SECOND FEAST", {
         fontFamily: FONT,
         fontSize: "19px",
         fontStyle: "bold",
@@ -103,7 +103,7 @@ export class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(21);
     this.streakText = this.add
-      .text(985, 28, "SERVE STREAK 0", {
+      .text(985, 28, "FEAST STREAK 0", {
         fontFamily: FONT,
         fontSize: "16px",
         fontStyle: "bold",
@@ -376,7 +376,7 @@ export class GameScene extends Phaser.Scene {
       const label = this.add
         .text(x + 31, y - 13, TOPPING_LABELS[topping], {
           fontFamily: FONT,
-          fontSize: "15px",
+          fontSize: TOPPING_LABELS[topping].length > 11 ? "12px" : "15px",
           fontStyle: "bold",
           color: selected ? "#38241d" : "#fff8e8",
         })
@@ -608,7 +608,7 @@ export class GameScene extends Phaser.Scene {
     if (qualifies) {
       this.showNameEntry(result, playedAt);
     } else {
-      this.showResultActions("Great rush — chase the local top 10!");
+      this.showResultActions("Great feast — chase the local top 10!");
     }
   }
 
@@ -657,7 +657,7 @@ export class GameScene extends Phaser.Scene {
     const closeEntry = (entry?: LeaderboardEntry) => {
       this.nameEntry?.destroy();
       this.nameEntry = undefined;
-      this.showResultActions(entry ? `Score saved as ${entry.name}!` : "Score not saved — ready for another rush?");
+      this.showResultActions(entry ? `Score saved as ${entry.name}!` : "Score not saved — feed them again?");
     };
     form.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -720,7 +720,7 @@ export class GameScene extends Phaser.Scene {
     this.streakText.setText(
       this.snapshot.streak >= 3
         ? `HOT STREAK ×${this.snapshot.streak}`
-        : `SERVE STREAK ${this.snapshot.streak}`,
+        : `FEAST STREAK ${this.snapshot.streak}`,
     );
   }
 
@@ -785,10 +785,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private orderTitle(): string {
-    if (this.challenge.kind === "equivalent") return "SAME SHARE, NEW CUTS!";
-    if (this.challenge.kind === "split") return "TWO-TOPPING SPECIAL!";
-    if (this.challenge.kind === "mixed") return "BIG TABLE ORDER!";
-    return "MAKE IT JUST RIGHT!";
+    if (this.challenge.kind === "equivalent") return "SAME GOO, NEW CUTS!";
+    if (this.challenge.kind === "split") return "DOUBLE-GROSS SPECIAL!";
+    if (this.challenge.kind === "mixed") return "MONSTER-SIZE ORDER!";
+    return "MAKE IT MONSTROUS!";
   }
 
   private nextChallenge(): OrderChallenge {
