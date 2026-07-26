@@ -48,6 +48,8 @@ export class GameScene extends Phaser.Scene {
   private activeTopping: ToppingId = "pepperoni";
   private orderStartedAt = 0;
   private focusedWedge = 0;
+  private countdownActive = true;
+  private countdownReady = false;
   private feedbackPending = false;
   private resultShown = false;
   private timeText!: Phaser.GameObjects.Text;
@@ -57,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private orderContainer?: Phaser.GameObjects.Container;
   private pizzaContainer?: Phaser.GameObjects.Container;
   private toppingContainer?: Phaser.GameObjects.Container;
+  private countdownContainer?: Phaser.GameObjects.Container;
   private nameEntry?: Phaser.GameObjects.DOMElement;
   private visibilityHandler?: () => void;
 
@@ -71,9 +74,12 @@ export class GameScene extends Phaser.Scene {
     this.feedbackPending = false;
     this.resultShown = false;
     this.focusedWedge = 0;
+    this.countdownActive = true;
+    this.countdownReady = false;
     this.orderContainer = undefined;
     this.pizzaContainer = undefined;
     this.toppingContainer = undefined;
+    this.countdownContainer = undefined;
     this.nameEntry = undefined;
     this.visibilityHandler = undefined;
   }
@@ -136,7 +142,7 @@ export class GameScene extends Phaser.Scene {
       .setVisible(false);
 
     this.session = new GameSession();
-    this.snapshot = this.session.begin(this.now());
+    this.snapshot = this.session.snapshot(this.now());
     this.runSkills = [...gameStore.snapshot().selectedSkills];
     this.skillDeck = new SkillDeck(this.runSkills);
     this.challenge = this.nextChallenge();
@@ -146,8 +152,13 @@ export class GameScene extends Phaser.Scene {
 
     this.renderChallenge();
     this.bindKeyboard();
+    this.startCountdown();
 
     this.visibilityHandler = () => {
+      if (this.countdownActive) {
+        if (!document.hidden && this.countdownReady) this.beginTimedRun();
+        return;
+      }
       if (document.hidden) {
         this.snapshot = this.session.pause(this.now());
       } else {
@@ -158,14 +169,89 @@ export class GameScene extends Phaser.Scene {
     };
     document.addEventListener("visibilitychange", this.visibilityHandler);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanUp());
-    this.input.on("pointerdown", () => this.game.canvas.focus());
+    this.input.on("pointerdown", this.focusCanvas, this);
   }
 
   update(): void {
-    if (this.resultShown) return;
+    if (this.resultShown || this.countdownActive) return;
     this.snapshot = this.session.snapshot(this.now());
     this.refreshHud();
     if (this.snapshot.complete && !this.feedbackPending) this.finishGame();
+  }
+
+  private startCountdown(): void {
+    const dimmer = this.add
+      .rectangle(640, 360, 1280, 720, COLORS.tealDeep, 0.62)
+      .setInteractive();
+    const badge = this.add
+      .circle(640, 350, 126, COLORS.tealDeep, 0.98)
+      .setStrokeStyle(8, COLORS.gold);
+    const number = this.add
+      .text(640, 342, "3", {
+        fontFamily: FONT,
+        fontSize: "104px",
+        fontStyle: "bold",
+        color: "#fff8e8",
+        stroke: "#8f2d2d",
+        strokeThickness: 9,
+      })
+      .setOrigin(0.5);
+    const instruction = this.add
+      .text(640, 458, "GET READY TO FEED!", {
+        fontFamily: FONT,
+        fontSize: "22px",
+        fontStyle: "bold",
+        color: "#fff8e8",
+      })
+      .setOrigin(0.5);
+    this.countdownContainer = this.add
+      .container(0, 0, [dimmer, badge, number, instruction])
+      .setDepth(80);
+
+    const reducedMotion = gameStore.snapshot().settings.reducedMotion;
+    const steps = ["3", "2", "1", "GO!"] as const;
+    steps.forEach((step, index) => {
+      this.time.delayedCall(index * 800, () => {
+        if (!this.countdownContainer?.active) return;
+        const isGo = step === "GO!";
+        number
+          .setText(step)
+          .setFontSize(isGo ? 66 : 104)
+          .setAlpha(1)
+          .setScale(reducedMotion ? 1 : 0.58);
+        badge
+          .setFillStyle(isGo ? COLORS.tomatoDeep : COLORS.tealDeep, 0.98)
+          .setScale(reducedMotion ? 1 : 0.9);
+        instruction.setText(isGo ? "FEED THOSE MONSTERS!" : "GET READY TO FEED!");
+        if (isGo) gameAudio.ding();
+        else gameAudio.tap();
+        if (!reducedMotion) {
+          this.tweens.add({
+            targets: [number, badge],
+            scale: 1,
+            duration: 260,
+            ease: "Back.Out",
+          });
+        }
+      });
+    });
+
+    this.time.delayedCall(3_000, () => {
+      this.countdownReady = true;
+      if (!document.hidden) this.beginTimedRun();
+    });
+  }
+
+  private beginTimedRun(): void {
+    if (!this.countdownActive || !this.countdownReady) return;
+    this.countdownActive = false;
+    this.countdownReady = false;
+    this.countdownContainer?.destroy(true);
+    this.countdownContainer = undefined;
+    const now = this.now();
+    this.snapshot = this.session.begin(now);
+    this.orderStartedAt = now;
+    this.refreshHud();
   }
 
   private renderChallenge(): void {
@@ -400,6 +486,7 @@ export class GameScene extends Phaser.Scene {
         .zone(x, y, 198, height)
         .setInteractive({ useHandCursor: true })
         .on("pointerup", () => {
+          if (this.countdownActive || this.feedbackPending || this.resultShown) return;
           this.activeTopping = topping;
           gameAudio.tap();
           this.renderToppingToolbar();
@@ -443,7 +530,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private toggleSlice(index: number): void {
-    if (this.feedbackPending || this.resultShown) return;
+    if (this.countdownActive || this.feedbackPending || this.resultShown) return;
     this.focusedWedge = index;
     this.selection = toggleWedge(this.selection, index, this.activeTopping);
     gameAudio.topping();
@@ -451,7 +538,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private serveOrder(): void {
-    if (this.feedbackPending || this.resultShown) return;
+    if (this.countdownActive || this.feedbackPending || this.resultShown) return;
     this.feedbackPending = true;
     const now = this.now();
     const responseTime = Math.max(500, now - this.orderStartedAt);
@@ -746,14 +833,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private focusPrevious(): void {
-    if (this.feedbackPending || this.resultShown) return;
+    if (this.countdownActive || this.feedbackPending || this.resultShown) return;
     const count = this.selection.wedges.length;
     this.focusedWedge = (this.focusedWedge - 1 + count) % count;
     this.renderPizzas();
   }
 
   private focusNext(): void {
-    if (this.feedbackPending || this.resultShown) return;
+    if (this.countdownActive || this.feedbackPending || this.resultShown) return;
     this.focusedWedge = (this.focusedWedge + 1) % this.selection.wedges.length;
     this.renderPizzas();
   }
@@ -764,7 +851,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private chooseTopping(index: number): void {
-    if (this.resultShown) return;
+    if (this.countdownActive || this.feedbackPending || this.resultShown) return;
     const topping = this.challenge.requirements[index]?.topping;
     if (topping) {
       this.activeTopping = topping;
@@ -774,6 +861,10 @@ export class GameScene extends Phaser.Scene {
 
   private returnToMenu(): void {
     if (!this.resultShown) this.scene.start("menu");
+  }
+
+  private focusCanvas(): void {
+    this.game.canvas.focus();
   }
 
   private cleanUp(): void {
@@ -789,6 +880,9 @@ export class GameScene extends Phaser.Scene {
     keyboard?.off("keydown-SPACE", this.toggleFocused, this);
     keyboard?.off("keydown-ENTER", this.serveOrder, this);
     keyboard?.off("keydown-ESC", this.returnToMenu, this);
+    this.input.off("pointerdown", this.focusCanvas, this);
+    this.countdownContainer?.destroy(true);
+    this.countdownContainer = undefined;
     this.nameEntry?.destroy();
     this.nameEntry = undefined;
   }

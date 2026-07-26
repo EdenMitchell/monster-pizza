@@ -3,6 +3,14 @@ import { GAME_DURATION_MS, MISS_TIME_PENALTY_MS } from "../config/gameConfig";
 import { GameSession } from "./gameSession";
 
 describe("90-second game session", () => {
+  it("holds the full clock until the countdown starts the run", () => {
+    const session = new GameSession();
+    expect(session.snapshot(1_000).started).toBe(false);
+    expect(session.snapshot(4_000).timeRemainingMs).toBe(GAME_DURATION_MS);
+    session.begin(4_000);
+    expect(session.snapshot(5_000).timeRemainingMs).toBe(GAME_DURATION_MS - 1_000);
+  });
+
   it("starts the clock immediately when the game begins", () => {
     const session = new GameSession();
     const started = session.begin(1_000);
