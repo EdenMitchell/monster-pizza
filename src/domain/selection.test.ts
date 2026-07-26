@@ -9,6 +9,7 @@ import {
 
 const challenge: OrderChallenge = {
   id: "split-test",
+  skill: "combining",
   kind: "split",
   boardDenominator: 4,
   pizzaCount: 1,

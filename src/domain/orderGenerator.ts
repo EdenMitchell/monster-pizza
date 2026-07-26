@@ -1,5 +1,6 @@
 import { fractionToWedges, normalizeFraction } from "./fractions";
 import type {
+  FractionSkillId,
   FractionValue,
   OrderChallenge,
   OrderRequirement,
@@ -30,43 +31,33 @@ function requirement(
   };
 }
 
-export type SpeedOrderPhase = "basics" | "eighths" | "equivalence" | "split" | "finale";
-
-export function speedOrderPhase(servedCount: number): SpeedOrderPhase {
-  if (servedCount < 2) return "basics";
-  if (servedCount < 4) return "eighths";
-  if (servedCount < 6) return "equivalence";
-  if (servedCount < 8) return "split";
-  return "finale";
-}
-
-function challengeId(phase: SpeedOrderPhase, servedCount: number, random: RandomSource) {
-  return `order-${phase}-${servedCount}-${Math.floor(random() * 1_000_000)}`;
+function challengeId(skill: FractionSkillId, orderIndex: number, random: RandomSource) {
+  return `order-${skill}-${orderIndex}-${Math.floor(random() * 1_000_000)}`;
 }
 
 function makeChallenge(
-  phase: "basics" | "eighths",
-  servedCount: number,
+  skill: "simple" | "more-parts",
+  orderIndex: number,
   random: RandomSource,
 ): OrderChallenge {
-  const boardDenominator = pick(phase === "basics" ? [2, 4] : [3, 6, 8], random);
+  const boardDenominator = pick(skill === "simple" ? [2, 4] : [3, 6, 8], random);
   const numerator = integer(1, boardDenominator - 1, random);
-  const topping = TOPPINGS[servedCount % TOPPINGS.length]!;
+  const topping = TOPPINGS[orderIndex % TOPPINGS.length]!;
   const fraction = { numerator, denominator: boardDenominator };
   return {
-    id: challengeId(phase, servedCount, random),
+    id: challengeId(skill, orderIndex, random),
+    skill,
     kind: "make",
     boardDenominator,
     pizzaCount: 1,
     requirements: [requirement(topping, fraction, boardDenominator)],
-    visualGuide: phase === "basics",
+    visualGuide: skill === "simple",
     customerIndex: integer(0, 3, random),
   };
 }
 
 function equivalentChallenge(
-  phase: "equivalence" | "finale",
-  servedCount: number,
+  orderIndex: number,
   random: RandomSource,
 ): OrderChallenge {
   const candidates = [
@@ -78,9 +69,10 @@ function equivalentChallenge(
     { display: { numerator: 3, denominator: 4 }, board: 8 },
   ];
   const selected = pick(candidates, random);
-  const topping = TOPPINGS[(servedCount + 1) % TOPPINGS.length]!;
+  const topping = TOPPINGS[(orderIndex + 1) % TOPPINGS.length]!;
   return {
-    id: challengeId(phase, servedCount, random),
+    id: challengeId("equivalent", orderIndex, random),
+    skill: "equivalent",
     kind: "equivalent",
     boardDenominator: selected.board,
     pizzaCount: 1,
@@ -91,18 +83,18 @@ function equivalentChallenge(
 }
 
 function splitChallenge(
-  phase: "split" | "finale",
-  servedCount: number,
+  orderIndex: number,
   random: RandomSource,
 ): OrderChallenge {
-  const boardDenominator = pick(phase === "split" ? [4, 6] : [6, 8], random);
+  const boardDenominator = pick([4, 6, 8], random);
   const firstWedges = integer(1, Math.max(1, Math.floor(boardDenominator / 2)), random);
   const maximumSecond = Math.max(1, boardDenominator - firstWedges);
   const secondWedges = integer(1, maximumSecond, random);
-  const firstTopping = TOPPINGS[servedCount % TOPPINGS.length]!;
-  const secondTopping = TOPPINGS[(servedCount + 1) % TOPPINGS.length]!;
+  const firstTopping = TOPPINGS[orderIndex % TOPPINGS.length]!;
+  const secondTopping = TOPPINGS[(orderIndex + 1) % TOPPINGS.length]!;
   return {
-    id: challengeId(phase, servedCount, random),
+    id: challengeId("combining", orderIndex, random),
+    skill: "combining",
     kind: "split",
     boardDenominator,
     pizzaCount: 1,
@@ -124,7 +116,7 @@ function splitChallenge(
 }
 
 function mixedChallenge(
-  servedCount: number,
+  orderIndex: number,
   random: RandomSource,
 ): OrderChallenge {
   const boardDenominator = pick([3, 4, 6], random);
@@ -133,9 +125,10 @@ function mixedChallenge(
     numerator: boardDenominator + remainder,
     denominator: boardDenominator,
   };
-  const topping = TOPPINGS[(servedCount + 2) % TOPPINGS.length]!;
+  const topping = TOPPINGS[(orderIndex + 2) % TOPPINGS.length]!;
   return {
-    id: challengeId("finale", servedCount, random),
+    id: challengeId("mixed-numbers", orderIndex, random),
+    skill: "mixed-numbers",
     kind: "mixed",
     boardDenominator,
     pizzaCount: 2,
@@ -145,23 +138,46 @@ function mixedChallenge(
   };
 }
 
-export function generateSpeedOrder(
-  servedCount: number,
+export function generateOrderForSkill(
+  skill: FractionSkillId,
+  orderIndex: number,
   random: RandomSource = Math.random,
 ): OrderChallenge {
-  if (!Number.isInteger(servedCount) || servedCount < 0) {
-    throw new Error("Served count must be a non-negative integer.");
+  if (!Number.isInteger(orderIndex) || orderIndex < 0) {
+    throw new Error("Order index must be a non-negative integer.");
   }
-  const phase = speedOrderPhase(servedCount);
-  if (phase === "basics" || phase === "eighths") {
-    return makeChallenge(phase, servedCount, random);
+  if (skill === "simple" || skill === "more-parts") {
+    return makeChallenge(skill, orderIndex, random);
   }
-  if (phase === "equivalence") return equivalentChallenge(phase, servedCount, random);
-  if (phase === "split") return splitChallenge(phase, servedCount, random);
-  const finaleIndex = (servedCount - 8) % 3;
-  if (finaleIndex === 0) return mixedChallenge(servedCount, random);
-  if (finaleIndex === 1) return equivalentChallenge("finale", servedCount, random);
-  return splitChallenge("finale", servedCount, random);
+  if (skill === "equivalent") return equivalentChallenge(orderIndex, random);
+  if (skill === "combining") return splitChallenge(orderIndex, random);
+  if (skill === "mixed-numbers") return mixedChallenge(orderIndex, random);
+  throw new Error("Unknown fraction skill.");
+}
+
+function shuffle<T>(items: readonly T[], random: RandomSource): T[] {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+  return shuffled;
+}
+
+export class SkillDeck {
+  private queue: FractionSkillId[] = [];
+
+  constructor(
+    private readonly skills: readonly FractionSkillId[],
+    private readonly random: RandomSource = Math.random,
+  ) {
+    if (skills.length === 0) throw new Error("Choose at least one fraction skill.");
+  }
+
+  next(): FractionSkillId {
+    if (this.queue.length === 0) this.queue = shuffle(this.skills, this.random);
+    return this.queue.shift()!;
+  }
 }
 
 export function orderIsConstructivelyValid(order: OrderChallenge): boolean {

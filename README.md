@@ -1,8 +1,9 @@
 # Slice Rush
 
-Slice Rush is a polished, device-local fractions game for ages 6–12. Players
-have 90 seconds to portion topping shares directly onto pizzas, build a hot
-streak, and earn a place on the device-local top-10 leaderboard.
+Slice Rush is a polished, device-local fractions game for ages 6–12. Teachers
+choose the fraction skills, then players have 90 seconds to portion topping
+shares directly onto pizzas, build a hot streak, and earn a place on that
+skill setup's device-local top-10 leaderboard.
 
 ## Play
 
@@ -11,10 +12,15 @@ npm install
 npm run dev
 ```
 
-Press `START GAME` and the timer begins immediately. The Phaser runtime uses a
-1280×720 logical canvas and scales for pointer, touch, and keyboard play. Use
-the arrow keys to focus wedges, Space to place or remove a topping, 1/2 to
-switch toppings, Enter to serve, and Escape to return to the menu.
+Choose one or more skills, then press `START GAME`; the timer begins
+immediately. On the menu, 1–5 toggle skills, `L` opens the active setup's
+leaderboard, Enter starts, and Escape closes the leaderboard. During play, use
+the arrow keys to focus wedges, Space to place or remove a topping, number keys
+to switch toppings, Enter to serve, and Escape to return to the menu.
+
+The selected skills appear in a shuffled deck, so each one is used once before
+any repeats. Selections persist on the device and are captured when a run
+starts. Every exact skill combination has its own local top 10.
 
 ## Quality checks
 
@@ -24,10 +30,10 @@ npm run typecheck
 npm run build
 ```
 
-The tests cover exact fraction arithmetic, constructive order generation,
-selection rules, the single-run difficulty ramp, 90-second timing and scoring,
-leaderboard ordering, persistence, migration recovery, and the complete asset
-manifest.
+The tests cover exact fraction arithmetic, at least 1,000 constructive orders
+for every selectable skill, shuffled-deck balance, selection rules, 90-second
+timing and scoring, per-setup leaderboard ordering, persistence, migration
+recovery, and the complete asset manifest.
 
 ## Architecture
 
@@ -37,5 +43,6 @@ manifest.
 - `public/assets` contains the optimized original ImageGen art used at runtime.
 - `art-source/ART_DIRECTION.md` records the generated asset set and briefs.
 
-Settings and the top 10 are stored only in local storage. There are no accounts,
-analytics, advertising, purchases, online leaderboards, or backend services.
+Settings, skill selections, and leaderboards are stored only in local storage.
+There are no accounts, analytics, advertising, purchases, online leaderboards,
+or backend services.

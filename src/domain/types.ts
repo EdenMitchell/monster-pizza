@@ -1,5 +1,11 @@
 export type ToppingId = "pepperoni" | "mushroom" | "olive" | "pepper";
 export type OrderKind = "make" | "equivalent" | "split" | "mixed";
+export type FractionSkillId =
+  | "simple"
+  | "more-parts"
+  | "equivalent"
+  | "combining"
+  | "mixed-numbers";
 
 export interface FractionValue {
   readonly numerator: number;
@@ -16,6 +22,7 @@ export interface OrderRequirement {
 
 export interface OrderChallenge {
   readonly id: string;
+  readonly skill: FractionSkillId;
   readonly kind: OrderKind;
   readonly boardDenominator: number;
   readonly pizzaCount: 1 | 2;
@@ -48,6 +55,7 @@ export interface LeaderboardEntry extends RunResult {
   readonly id: string;
   readonly name: string;
   readonly playedAt: number;
+  readonly skills: readonly FractionSkillId[];
 }
 
 export interface SliceRushSettings {
@@ -56,8 +64,9 @@ export interface SliceRushSettings {
 }
 
 export interface SliceRushSave {
-  readonly version: 2;
+  readonly version: 3;
   readonly leaderboard: readonly LeaderboardEntry[];
+  readonly selectedSkills: readonly FractionSkillId[];
   readonly settings: SliceRushSettings;
   readonly instructionsSeen: boolean;
 }

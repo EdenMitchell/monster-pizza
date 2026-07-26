@@ -1,7 +1,7 @@
 import * as Phaser from "phaser";
 import { formatFraction } from "../../domain/fractions";
 import { sanitizePlayerName } from "../../domain/gameStore";
-import { generateSpeedOrder } from "../../domain/orderGenerator";
+import { generateOrderForSkill, SkillDeck } from "../../domain/orderGenerator";
 import {
   countTopping,
   createEmptySelection,
@@ -10,6 +10,7 @@ import {
 } from "../../domain/selection";
 import { GameSession } from "../../domain/gameSession";
 import type {
+  FractionSkillId,
   GameSnapshot,
   LeaderboardEntry,
   OrderChallenge,
@@ -46,6 +47,8 @@ const CUSTOMER_NAMES = ["Koa", "Milly", "Ollie", "Tui"];
 
 export class GameScene extends Phaser.Scene {
   private session!: GameSession;
+  private skillDeck!: SkillDeck;
+  private runSkills: readonly FractionSkillId[] = ["simple"];
   private snapshot!: GameSnapshot;
   private challenge!: OrderChallenge;
   private selection!: OrderSelection;
@@ -127,7 +130,9 @@ export class GameScene extends Phaser.Scene {
 
     this.session = new GameSession();
     this.snapshot = this.session.begin(this.now());
-    this.challenge = generateSpeedOrder(this.snapshot.served);
+    this.runSkills = [...gameStore.snapshot().selectedSkills];
+    this.skillDeck = new SkillDeck(this.runSkills);
+    this.challenge = this.nextChallenge();
     this.selection = createEmptySelection(this.challenge);
     this.activeTopping = this.challenge.requirements[0]!.topping;
     this.orderStartedAt = this.now();
@@ -428,7 +433,7 @@ export class GameScene extends Phaser.Scene {
         this.finishGame();
         return;
       }
-      this.challenge = generateSpeedOrder(this.snapshot.served);
+      this.challenge = this.nextChallenge();
       this.selection = createEmptySelection(this.challenge);
       this.activeTopping = this.challenge.requirements[0]!.topping;
       this.focusedWedge = 0;
@@ -476,7 +481,7 @@ export class GameScene extends Phaser.Scene {
       bestStreak: this.session.getBestStreak(),
     };
     const playedAt = Date.now();
-    const qualifies = gameStore.qualifiesForLeaderboard(result, playedAt);
+    const qualifies = gameStore.qualifiesForLeaderboard(result, this.runSkills, playedAt);
     if (qualifies) gameAudio.finale();
     else gameAudio.ding();
 
@@ -591,7 +596,7 @@ export class GameScene extends Phaser.Scene {
         input.focus();
         return;
       }
-      const entry = gameStore.addLeaderboardEntry(cleanName, result, playedAt);
+      const entry = gameStore.addLeaderboardEntry(cleanName, result, this.runSkills, playedAt);
       if (entry) gameAudio.unlock();
       closeEntry(entry);
     });
@@ -713,6 +718,10 @@ export class GameScene extends Phaser.Scene {
     if (this.challenge.kind === "split") return "TWO-TOPPING SPECIAL!";
     if (this.challenge.kind === "mixed") return "BIG TABLE ORDER!";
     return "MAKE IT JUST RIGHT!";
+  }
+
+  private nextChallenge(): OrderChallenge {
+    return generateOrderForSkill(this.skillDeck.next(), this.snapshot.served);
   }
 
   private now(): number {
