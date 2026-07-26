@@ -36,13 +36,6 @@ const TOPPING_COLORS: Record<ToppingId, number> = {
   pepper: 0x6f9f3f,
 };
 
-const TOPPING_MARKS: Record<ToppingId, string> = {
-  pepperoni: "≈",
-  mushroom: "≋",
-  olive: "◉",
-  pepper: "∿",
-};
-
 const CUSTOMER_NAMES = ["Gloop", "Munch", "Boggles", "Fizz"];
 
 export class GameScene extends Phaser.Scene {
@@ -277,22 +270,22 @@ export class GameScene extends Phaser.Scene {
 
         if (topping) {
           const angle = (start + end) / 2;
-          const mark = this.add
-            .text(
+          const iconSize =
+            this.challenge.boardDenominator >= 8
+              ? 36
+              : this.challenge.boardDenominator >= 6
+                ? 42
+                : this.challenge.boardDenominator >= 4
+                  ? 48
+                  : 54;
+          const ingredientIcon = this.add
+            .image(
               center.x + Math.cos(angle) * 71,
               center.y + Math.sin(angle) * 71,
-              TOPPING_MARKS[topping],
-              {
-                fontFamily: FONT,
-                fontSize: this.challenge.boardDenominator >= 6 ? "21px" : "27px",
-                fontStyle: "bold",
-                color: "#fff8e8",
-                stroke: "#38241d",
-                strokeThickness: 3,
-              },
+              ASSET.toppings[topping],
             )
-            .setOrigin(0.5);
-          container.add(mark);
+            .setDisplaySize(iconSize, iconSize);
+          container.add(ingredientIcon);
         }
       }
     });
